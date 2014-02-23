@@ -132,14 +132,14 @@ int main(int argc, char *argv[]) {
 	address3.SetBase("10.3.0.0", "255.255.255.0");
 	address4.SetBase("10.4.0.0", "255.255.255.0");
 	// link
-	pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-	pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
+	pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Mbps"));
+	pointToPoint.SetChannelAttribute("Delay", TimeValue(MicroSeconds(100)));
 	//pointToPoint2.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
 	//pointToPoint2.SetChannelAttribute("Delay", StringValue("10ms"));
 
 	devices[1] = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
 	devices[2] = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
-	//devices[3] = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
+	devices[3] = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
 	//devices[4] = pointToPoint2.Install(nodes.Get(0), nodes.Get(1));
 
 	// Assign ip addresses
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
 	//if1 = address4.Assign(devices[1]);
 
 	Ipv4InterfaceContainer if2 = address2.Assign(devices[2]);
-	//Ipv4InterfaceContainer if3 = address3.Assign(devices[3]);
+	Ipv4InterfaceContainer if3 = address3.Assign(devices[3]);
 	//Ipv4InterfaceContainer if4 = address4.Assign(devices[4]);
 
 	//set iproute
@@ -157,11 +157,11 @@ int main(int argc, char *argv[]) {
 	cmd_oss << "route add 10.1.0.0/24 via 10.1.0.2";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), cmd_oss.str().c_str());
-	cmd_oss.str("");
+		cmd_oss.str("");
 	cmd_oss << "route add 10.2.0.0/24 via 10.2.0.2";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), cmd_oss.str().c_str());
-	/*cmd_oss.str("");
+	cmd_oss.str("");
 	cmd_oss << "route add 10.3.0.0/24 via 10.3.0.2";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), cmd_oss.str().c_str());
@@ -169,37 +169,42 @@ int main(int argc, char *argv[]) {
 	cmd_oss << "route add 10.4.0.0/24 via 10.4.0.2";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), cmd_oss.str().c_str());
-*/
+
 
 	cmd_oss.str("");
 	cmd_oss << "route add 10.1.0.0/24 via 10.1.0.1";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), cmd_oss.str().c_str());
-	cmd_oss.str("");
+		cmd_oss.str("");
 	cmd_oss << "route add 10.2.0.0/24 via 10.2.0.1";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), cmd_oss.str().c_str());
-	/*
+
 	cmd_oss.str("");
 	cmd_oss << "route add 10.3.0.0/24 via 10.3.0.1";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), cmd_oss.str().c_str());
-	/*cmd_oss.str("");
+	cmd_oss.str("");
 	cmd_oss << "route add 10.4.0.0/24 via 10.4.0.1";
 	cout << cmd_oss.str() << endl;
 	LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), cmd_oss.str().c_str());
-*/
+
 	// debug
 	stack.SysctlSet(nodes, ".net.mptcp.mptcp_debug", "1");
 
+	stack.SysctlSet (nodes, ".net.ipv4.tcp_rmem", "500000 500000 500000");
+	stack.SysctlSet (nodes, ".net.ipv4.tcp_wmem", "500000 500000 500000");
+	stack.SysctlSet (nodes, ".net.core.rmem_max", "500000");
+	stack.SysctlSet (nodes, ".net.core.wmem_max", "500000");
+
 	multimap<int, string> adrs_set;
-	adrs_set.insert(map<int, string>::value_type(0, "10.2.0.2"));
+	adrs_set.insert(map<int, string>::value_type(0, "10.1.0.2"));
 	uint32_t kb = 70;
 	double end = 10.0;
 	string end_t = "10.0";
 
-	socketTraffic(kb, end, nodes);
-/*
+	//socketTraffic(kb, end, nodes);
+
 	DceApplicationHelper dce;
 	ApplicationContainer apps;
 
@@ -210,15 +215,15 @@ int main(int argc, char *argv[]) {
 	dce.ResetArguments();
 	dce.ResetEnvironment();
 	dce.AddArgument ("-c");
-	dce.AddArgument ("10.2.0.2");
+	dce.AddArgument ("10.1.0.2");
 	dce.AddArgument ("-i");
 	dce.AddArgument ("1");
 	dce.AddArgument ("--time");
-	dce.AddArgument ("10");
+	dce.AddArgument ("4");
 
 	apps = dce.Install(nodes.Get(0));
-	apps.Start(Seconds(0.7));
-	apps.Stop(Seconds(20));
+	apps.Start(Seconds(1));
+	apps.Stop(Seconds(5));
 
 	// Launch iperf server on node 1
 	dce.SetBinary("iperf");
@@ -230,7 +235,7 @@ int main(int argc, char *argv[]) {
 	//dce.AddArgument("-u");
 
 	apps = dce.Install(nodes.Get(1));
-*/
+
 
 	//pointToPoint.EnablePcap("pcap/back2/iperf-mptcp_back2", devices[1].Get(1), false, false);
 	//pointToPoint.EnablePcap("pcap/back2/iperf-mptcp_back2", devices[2].Get(1), false, false);
@@ -241,7 +246,7 @@ int main(int argc, char *argv[]) {
 	setPos(nodes.Get(0), 0, 20 * (nRtrs - 1) / 2, 0);
 	setPos(nodes.Get(1), 100, 20 * (nRtrs - 1) / 2, 0);
 
-	Simulator::Stop(Seconds(10.0));
+	Simulator::Stop(Seconds(5.0));
 	AnimationInterface anim("./xml/mptcp_back2.xml");
 	Simulator::Run();
 	Simulator::Destroy();

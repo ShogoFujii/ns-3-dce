@@ -145,6 +145,7 @@ int main (int argc, char *argv[])
   setPos (nodes.Get (1), 100, 20 * (nRtrs - 1) / 2, 0);
 
   Simulator::Stop (Seconds (200.0));
+  AnimationInterface anim("./xml/mptcp.xml");
   Simulator::Run ();
   Simulator::Destroy ();
 
